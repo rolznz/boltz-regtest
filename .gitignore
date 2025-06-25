@@ -19,3 +19,5 @@ data/bitcoind/*
 data/boltz-client/*
 !data/boltz-client/boltz.toml
 docker-compose.override.yml
+mempool-data
+mysql
