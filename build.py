@@ -25,6 +25,36 @@ class Image:
     arguments: list[BuildArgument]
 
 
+def load_env_file(env_path: Path) -> dict[str, str]:
+    """Load KEY=VALUE pairs from a .env file, ignoring comments and blanks."""
+    env: dict[str, str] = {}
+    if not env_path.exists():
+        return env
+
+    try:
+        with env_path.open("r") as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip()
+                # Strip optional surrounding quotes
+                if (value.startswith('"') and value.endswith('"')) or (
+                    value.startswith("'") and value.endswith("'")
+                ):
+                    value = value[1:-1]
+                env[key] = value
+    except Exception:
+        # Fail silently and return what we have to avoid breaking builds
+        pass
+
+    return env
+
+
 UBUNTU_VERSION = BuildArgument(
     name="UBUNTU_VERSION",
     value="24.04",
@@ -32,7 +62,7 @@ UBUNTU_VERSION = BuildArgument(
 
 NODE_VERSION = BuildArgument(
     name="NODE_VERSION",
-    value="lts-bookworm",
+    value="lts-trixie",
 )
 
 NGINX_VERSION = BuildArgument(
@@ -40,7 +70,7 @@ NGINX_VERSION = BuildArgument(
     value="alpine",
 )
 
-CLN_VERSION = "25.02"
+CLN_VERSION = "26.06.1"
 ELECTRS_VERSION = "new-index-6d182d"
 
 IMAGES: dict[str, Image] = {
@@ -63,19 +93,33 @@ IMAGES: dict[str, Image] = {
             UBUNTU_VERSION,
         ],
     ),
-    "rif-relay": Image(
+    "gas-sponsor-emulator": Image(
         tag="latest",
-        arguments=[NODE_VERSION],
+        arguments=[],
     ),
     "scripts": Image(
         tag="latest",
         arguments=[
             UBUNTU_VERSION,
+            BuildArgument(
+                name="ARKD_IMAGE",
+                value=load_env_file(Path(__file__).parent / ".env").get("ARKD_IMAGE"),
+            ),
         ],
     ),
     "c-lightning-plugins": Image(
         tag=CLN_VERSION,
-        arguments=[],
+        arguments=[
+            UBUNTU_VERSION,
+            BuildArgument(
+                name="HOLD_VERSION",
+                value="v0.3.3",
+            ),
+            BuildArgument(
+                name="CLNURL_VERSION",
+                value="v0.1.0",
+            ),
+        ],
     ),
 }
 
@@ -165,7 +209,7 @@ def build_images(
             )
         else:
             extra_tag = "" if no_latest else f"-t {name}:latest"
-            command = f"docker build -t {name}:{tag} {extra_tag} {args} ."
+            command = f"docker build --load -t {name}:{tag} {extra_tag} {args} ."
 
         if no_cache:
             command = command + " --no-cache"

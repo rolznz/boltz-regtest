@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -xe
 
 echo "Running cleanup"
@@ -27,8 +27,11 @@ WIPE_DIRS=(
     ".lightning-2"
     ".lnd-1"
     ".lnd-2"
+    ".lnd-3"
     ".boltz-backend"
     ".boltz-client"
+    ".arkd"
+    ".fulmine"
 )
 
 for dir in "${WIPE_DIRS[@]}"; do

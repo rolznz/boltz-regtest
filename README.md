@@ -3,6 +3,7 @@
 An environment for local development and testing, successor of [legend-regtest-enviroment](https://github.com/BoltzExchange/legend-regtest-enviroment).
 
 ## Prerequisites
+
 [Docker](https://docs.docker.com/engine/install/) or [Orbstack](https://orbstack.dev/) for Apple Silicon based Macs.
 When using OrbStack on macOS, set `export DOCKER_DEFAULT_PLATFORM=linux/amd64` before starting.
 
@@ -31,11 +32,12 @@ docker exec -it boltz-scripts bash
 - bitcoin-cli-sim-server
 - elements-cli-sim-client
 - elements-cli-sim-server
-- boltzcli-sim ([boltz-client](https://github.com/BoltzExchange/boltz-client))
-- lightning-cli-sim
-- lncli-sim
-
-Since there are two lnd and two cln instances, use `lncli-sim 1` or `lightning-cli-sim 1` to interact with the first instance and `lncli-sim 2` or `lightning-cli-sim 2` to interact with the second.
+- lightning-cli-sim-client
+- lightning-cli-sim-server
+- lncli-sim-client
+- lncli-sim-server
+- boltz-client-cli-sim
+- boltz-backend-cli-sim
 
 Or alternatively, you can `source aliases.sh` to have these convenience scripts available on the host machine.
 
@@ -50,23 +52,63 @@ Or alternatively, you can `source aliases.sh` to have these convenience scripts 
 
 ### Your first swap
 
-Run `./start.sh`
+Run `./start.sh` and enter the scripts container or add aliases on your host as described above.
 
-then run bash on the container
-
-```bash
-docker exec -it boltz-scripts bash
-```
-
-check your bitcoin wallet balance
+Check the client's bitcoin wallet balance:
 
 ```bash
 bitcoin-cli-sim-client getbalance
 ```
 
+Check the client's LND channel balance:
+
+```bash
+lncli-sim-client channelbalance
+```
+
+Generate e.g. a Bitcoin -> Lightning swap in [Web App](http://localhost:8080/) using Client's LND as destination with a 100k sats invoice:
+
+```bash
+lncli-sim-client addinvoice --amt 100000
+```
+
+Send the required Bitcoin amount into the swap, e.g. with
+
+```bash
+bitcoin-cli-sim-client sendtoaddress bcrt1qfzjp72mft2kcx49w49l5v6vdegr7lff86j08w7 0.00104200
+```
+
+Mine three blocks for the swap to process and watch web app progress to the swap success screen:
+
+```bash
+bitcoin-cli-sim-client -generate 3
+```
+
+Check the client's bitcoin wallet balance again:
+
+```bash
+bitcoin-cli-sim-client getbalance
+```
+
+Check the client's LND channel balance again:
+
+```bash
+lncli-sim-client channelbalance
+```
+
+### Updating images
+
+```bash
+./stop.sh
+docker compose pull
+./start.sh
+```
+
+### Alby Hub
+
 #### Connecting to the network
 
-connect to bitcoind via rpc (`127.0.0.1:18433`, using cookie auth or rpc user:password can be extracted with `cat /root/.bitcoin/regtest/.cookie`) or esplora (`http://localhost:4002/api`)
+connect to bitcoind via rpc (`127.0.0.1:18443`, using cookie auth; the user:password can be extracted with `docker exec boltz-bitcoind cat /app/bitcoin/regtest/.cookie`) or esplora (`http://localhost:4002/api`)
 
 #### Top up your wallet
 

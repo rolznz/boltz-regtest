@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -xe
 
 DIRECTORIES=(
@@ -6,6 +6,7 @@ DIRECTORIES=(
     "/root/.lightning-2"
     "/root/.lnd-1"
     "/root/.lnd-2"
+    "/root/.lnd-3"
     "/root/.bitcoin"
     "/root/.elements"
     "/root/.boltz-client"
